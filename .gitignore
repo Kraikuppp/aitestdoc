@@ -15,6 +15,9 @@ yarn-error.log*
 uploads/
 token.json
 
+# Google credentials (sensitive)
+client_secret_*.json
+
 # Logs
 logs
 *.log
