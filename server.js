@@ -62,8 +62,8 @@ const emailService = {
     emailjs: {
         serviceId: process.env.EMAILJS_SERVICE_ID || 'service_auvg5tg',
         templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_l3vud89',
-        publicKey: process.env.EMAILJS_PUBLIC_KEY || 'your_public_key',
-        privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
+        publicKey: process.env.EMAILJS_PUBLIC_KEY || 'nXcFHnyoqbnj7YWPe',
+        privateKey: process.env.EMAILJS_PRIVATE_KEY || 'lcZ_y4QBAVR73PasgD4l1'
     }
 };
 
@@ -96,8 +96,8 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
         const emailjsConfig = {
             serviceId: process.env.EMAILJS_SERVICE_ID || 'service_auvg5tg',
             templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_l3vud89',
-            publicKey: process.env.EMAILJS_PUBLIC_KEY || 'your_public_key',
-            privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
+            publicKey: process.env.EMAILJS_PUBLIC_KEY || 'nXcFHnyoqbnj7YWPe',
+            privateKey: process.env.EMAILJS_PRIVATE_KEY || 'lcZ_y4QBAVR73PasgD4l1'
         };
         
         // EmailJS template parameters (without QR code image for now to test)
