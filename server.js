@@ -405,7 +405,7 @@ async function createOrGetFolder(drive, folderName, parentFolderId = null) {
 }
 
 // Upload file to Google Drive with folder organization
-async function uploadToGoogleDrive(filePath, fileName, mimeType, folderPath = null) {
+async function uploadToGoogleDrive(fileBuffer, fileName, mimeType, folderPath = null) {
     try {
         const oAuth2Client = await createOAuth2Client();
         await getAccessToken(oAuth2Client);
@@ -434,7 +434,7 @@ async function uploadToGoogleDrive(filePath, fileName, mimeType, folderPath = nu
         
         const media = {
             mimeType: mimeType,
-            body: fs.createReadStream(filePath),
+            body: require('stream').Readable.from(fileBuffer),
         };
         
         const response = await drive.files.create({
@@ -484,7 +484,7 @@ async function createZipFile(files, outputPath) {
         archive.pipe(output);
 
         files.forEach(file => {
-            archive.file(file.path, { name: file.originalname });
+            archive.append(file.buffer, { name: file.originalname });
         });
 
         archive.finalize();
@@ -492,9 +492,8 @@ async function createZipFile(files, outputPath) {
 }
 
 // Convert image to PDF page
-async function addImageToPDF(pdfDoc, imagePath) {
+async function addImageToPDF(pdfDoc, imageBuffer) {
     try {
-        const imageBuffer = await fs.readFile(imagePath);
         const processedBuffer = await sharp(imageBuffer)
             .resize(595, 842, { fit: 'inside', withoutEnlargement: true })
             .png()
@@ -526,9 +525,8 @@ async function addImageToPDF(pdfDoc, imagePath) {
 }
 
 // Convert DOC/DOCX to PDF page
-async function addDocToPDF(pdfDoc, docPath) {
+async function addDocToPDF(pdfDoc, docBuffer) {
     try {
-        const docBuffer = await fs.readFile(docPath);
         const result = await mammoth.extractRawText({ buffer: docBuffer });
         const text = result.value;
         
@@ -588,16 +586,15 @@ async function createCombinedPDF(files, outputPath) {
             
             if (fileExt === '.pdf') {
                 // If it's already a PDF, merge it
-                const existingPdfBytes = await fs.readFile(file.path);
-                const existingPdf = await PDFDocument.load(existingPdfBytes);
+                const existingPdf = await PDFDocument.load(file.buffer);
                 const pages = await pdfDoc.copyPages(existingPdf, existingPdf.getPageIndices());
                 pages.forEach((page) => pdfDoc.addPage(page));
             } else if (['.png', '.jpg', '.jpeg'].includes(fileExt)) {
                 // Convert image to PDF page
-                await addImageToPDF(pdfDoc, file.path);
+                await addImageToPDF(pdfDoc, file.buffer);
             } else if (['.doc', '.docx'].includes(fileExt)) {
                 // Convert DOC/DOCX to PDF page
-                await addDocToPDF(pdfDoc, file.path);
+                await addDocToPDF(pdfDoc, file.buffer);
             }
         }
         
@@ -778,8 +775,9 @@ app.post('/upload', upload.array('files'), async (req, res) => {
             const folderName = req.body.folderName || extractFolderName(files[0].originalname);
             
             // Upload PDF to Google Drive
+            const pdfBuffer = await fs.readFile(pdfPath);
             const driveResult = await uploadToGoogleDrive(
-                pdfPath,
+                pdfBuffer,
                 pdfFileName,
                 'application/pdf',
                 folderName
@@ -806,7 +804,7 @@ app.post('/upload', upload.array('files'), async (req, res) => {
                 const folderName = req.body.folderName || extractFolderName(file.originalname);
                 
                 const driveResult = await uploadToGoogleDrive(
-                    file.path,
+                    file.buffer,
                     file.originalname,
                     file.mimetype,
                     folderName
@@ -825,10 +823,7 @@ app.post('/upload', upload.array('files'), async (req, res) => {
             }
         }
 
-        // Clean up uploaded files
-        for (const file of files) {
-            await fs.remove(file.path);
-        }
+        // No need to clean up files since we're using memory storage
 
         res.json({
             success: true,
@@ -839,16 +834,7 @@ app.post('/upload', upload.array('files'), async (req, res) => {
     } catch (error) {
         console.error('Upload error:', error);
         
-        // Clean up files on error
-        if (req.files) {
-            for (const file of req.files) {
-                try {
-                    await fs.remove(file.path);
-                } catch (cleanupError) {
-                    console.error('Error cleaning up file:', cleanupError);
-                }
-            }
-        }
+        // No cleanup needed for memory storage
 
         res.status(500).json({
             success: false,
