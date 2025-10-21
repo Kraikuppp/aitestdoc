@@ -101,15 +101,19 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
             privateKey: 'lcZ_y4QBAVR73PasgD4l1'
         };
         
+        // Get logo as base64
+        const logoBase64 = getLogoBase64();
+        
         // Template parameters for EmailJS
         const templateParams = {
             to_email: recipientEmail,
             to_name: recipientEmail.split('@')[0],
             fileName: fileName,
-            message: `ไฟล์ ${fileName} ได้ถูกอัปโหลดเรียบร้อยแล้ว สามารถเข้าถึงได้ผ่าน QR Code ด้านล่าง`,
+            logoBase64: logoBase64,
+            qrCodeBase64: qrCodeBase64,
             fileUrl: '#', // Will be replaced with actual Google Drive URL
-            from_name: 'Amptron Instruments Thailand',
-            reply_to: 'sup06.amptronth@gmail.com'
+            from_name: 'Amptron Instruments Thailand Co.,Ltd.',
+            reply_to: 'sales@amptron.th.com'
         };
         
         console.log('EmailJS template params:', {
