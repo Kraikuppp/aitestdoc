@@ -87,43 +87,78 @@ if (emailService.useLocal) {
 // Email history storage (in production, use a database)
 let emailHistory = [];
 
-// Send email via HTTP API (for production)
+// Send email via EmailJS HTTP API (for production)
 async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
     try {
-        // Use a simple HTTP email service like Formspree or EmailJS
-        // For now, we'll use a webhook approach with a simple email service
+        console.log('Sending email via EmailJS...');
         
-        const emailTemplate = createEmailTemplate(fileName, qrCodeBase64);
-        
-        // Option 1: Use Formspree (free tier)
-        const formspreeEndpoint = process.env.FORMSPREE_ENDPOINT || 'https://formspree.io/f/your-form-id';
-        
-        const emailData = {
-            to: recipientEmail,
-            subject: `ไฟล์ ${fileName} พร้อมใช้งาน - QR Code แนบ`,
-            message: `ไฟล์ ${fileName} ได้ถูกอัปโหลดเรียบร้อยแล้ว\n\nสแกน QR Code เพื่อเข้าถึงไฟล์`,
-            html: emailTemplate.html,
-            _replyto: 'sup06.amptronth@gmail.com',
-            _subject: `ไฟล์ ${fileName} พร้อมใช้งาน - QR Code แนบ`
+        // EmailJS configuration
+        const emailjsConfig = {
+            serviceId: process.env.EMAILJS_SERVICE_ID || 'service_gmail',
+            templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_aitestdoc',
+            publicKey: process.env.EMAILJS_PUBLIC_KEY || 'your_public_key',
+            privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
         };
         
-        // For now, simulate successful email sending
-        // In production, you would integrate with a real email service
-        console.log('Simulating email send via HTTP API...');
-        console.log('Email data:', { to: recipientEmail, subject: emailData.subject });
+        // Convert QR code to data URL
+        const qrCodeDataURL = `data:image/png;base64,${qrCodeBase64}`;
         
-        // Simulate API response
+        // EmailJS template parameters
+        const templateParams = {
+            to_email: recipientEmail,
+            to_name: recipientEmail.split('@')[0],
+            fileName: fileName,
+            qrCodeImage: qrCodeDataURL,
+            fileUrl: '#', // Will be replaced with actual Google Drive URL
+            from_name: 'Amptron Instruments Thailand',
+            reply_to: 'sup06.amptronth@gmail.com'
+        };
+        
+        // EmailJS API endpoint
+        const emailjsUrl = 'https://api.emailjs.com/api/v1.0/email/send';
+        
+        const emailjsData = {
+            service_id: emailjsConfig.serviceId,
+            template_id: emailjsConfig.templateId,
+            user_id: emailjsConfig.publicKey,
+            accessToken: emailjsConfig.privateKey,
+            template_params: templateParams
+        };
+        
+        console.log('EmailJS request data:', {
+            service_id: emailjsData.service_id,
+            template_id: emailjsData.template_id,
+            to_email: recipientEmail
+        });
+        
+        // Send request to EmailJS
+        const response = await fetch(emailjsUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailjsData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`EmailJS API error: ${response.status} ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('EmailJS response:', responseText);
+        
         const result = {
-            messageId: `http-${Date.now()}@aitestdoc.railway.app`,
+            messageId: `emailjs-${Date.now()}@aitestdoc.railway.app`,
             status: 'sent',
-            service: 'HTTP-API'
+            service: 'EmailJS',
+            response: responseText
         };
         
-        console.log('Email sent successfully via HTTP API:', result.messageId);
+        console.log('Email sent successfully via EmailJS:', result.messageId);
         return result;
         
     } catch (error) {
-        console.error('Error sending email via HTTP API:', error);
+        console.error('Error sending email via EmailJS:', error);
         throw error;
     }
 }
