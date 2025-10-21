@@ -39,15 +39,32 @@ function extractFolderName(filePath) {
 
 // Email configuration
 const emailConfig = {
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER || 'sup06.amptronth@gmail.com',
         pass: process.env.EMAIL_PASS || 'wyxr olrk xypm hdst' // Gmail App Password
-    }
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 30000, // 30 seconds
+    socketTimeout: 60000 // 60 seconds
 };
 
 // Create email transporter
 const transporter = nodemailer.createTransport(emailConfig);
+
+// Test SMTP connection on startup
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('SMTP connection error:', error);
+    } else {
+        console.log('SMTP server is ready to take our messages');
+    }
+});
 
 // Email history storage (in production, use a database)
 let emailHistory = [];
@@ -244,10 +261,29 @@ async function sendEmailWithQR(recipientEmail, fileName, qrCodeDataUrl) {
         };
         
         console.log('Attempting to send email to:', recipientEmail);
-        console.log('Email config:', { user: emailConfig.auth.user, service: emailConfig.service });
+        console.log('Email config:', { user: emailConfig.auth.user, host: emailConfig.host, port: emailConfig.port });
         
-        const result = await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully:', result.messageId);
+        // Try to send email with retry mechanism
+        let result;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+            try {
+                attempts++;
+                console.log(`Email send attempt ${attempts}/${maxAttempts}`);
+                result = await transporter.sendMail(mailOptions);
+                console.log('Email sent successfully:', result.messageId);
+                break;
+            } catch (sendError) {
+                console.error(`Email send attempt ${attempts} failed:`, sendError.message);
+                if (attempts === maxAttempts) {
+                    throw sendError;
+                }
+                // Wait 2 seconds before retry
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
         
         // Save to email history
         const emailRecord = {
