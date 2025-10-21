@@ -302,7 +302,7 @@ const upload = multer({
 
 // Google Drive API setup
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-const CREDENTIALS_PATH = 'client_secret_537558187339-g9ua637qvrh3e2idbi35g58ll5oioct3.apps.googleusercontent.com.json';
+const CREDENTIALS_PATH = 'client_secret_537558187339-7s2eifrvcrldk3mo4h7bakjlft6mg454.apps.googleusercontent.com.json';
 const TOKEN_PATH = 'token.json';
 
 // Load client secrets from environment or local file
