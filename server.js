@@ -119,9 +119,13 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
         console.log('EmailJS template params:', {
             to_email: templateParams.to_email,
             fileName: templateParams.fileName,
+            hasLogo: !!templateParams.logoBase64,
+            hasQrCode: !!templateParams.qrCodeBase64,
             service_id: emailjsConfig.serviceId,
             template_id: emailjsConfig.templateId
         });
+        
+        console.log('Full template params being sent:', templateParams);
         
         // EmailJS API request
         const emailjsData = {
