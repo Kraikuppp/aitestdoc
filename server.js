@@ -87,41 +87,83 @@ if (emailService.useLocal) {
 // Email history storage (in production, use a database)
 let emailHistory = [];
 
-// Send email notification (simulation for now due to EmailJS server-side limitations)
+// Send email via Resend API (for production)
 async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
     try {
-        console.log('Email notification for:', recipientEmail);
+        console.log('Attempting to send real email to:', recipientEmail);
         console.log('File:', fileName);
         
-        // Since EmailJS blocks server-side calls, we'll simulate for now
-        // In production, you would use a proper email service like:
-        // - Resend (https://resend.com) - 3000 free emails/month
-        // - SendGrid - has free tier
-        // - Amazon SES - very cheap
+        // Check for Resend API key
+        const resendApiKey = process.env.RESEND_API_KEY;
         
-        console.log('📧 Email would contain:');
-        console.log('- Recipient:', recipientEmail);
-        console.log('- Subject: ไฟล์', fileName, 'พร้อมใช้งาน - Amptron Instruments');
-        console.log('- QR Code: Included');
-        console.log('- Company: Amptron Instruments Thailand');
+        if (!resendApiKey || resendApiKey === 'your_resend_api_key') {
+            console.log('⚠️  No Resend API key found - simulating email...');
+            console.log('📧 Email would contain:');
+            console.log('- Recipient:', recipientEmail);
+            console.log('- Subject: ไฟล์', fileName, 'พร้อมใช้งาน - Amptron Instruments');
+            console.log('- QR Code: Included');
+            console.log('💡 To send real emails, set RESEND_API_KEY in Railway Variables');
+            
+            return {
+                messageId: `simulated-${Date.now()}@aitestdoc.railway.app`,
+                status: 'simulated',
+                service: 'Simulation',
+                to: recipientEmail,
+                fileName: fileName
+            };
+        }
         
-        // Simulate successful email
-        const result = {
-            messageId: `simulated-${Date.now()}@aitestdoc.railway.app`,
-            status: 'simulated',
-            service: 'Simulation',
-            to: recipientEmail,
-            fileName: fileName,
-            note: 'EmailJS blocks server-side calls. Use Resend/SendGrid for production.'
+        // Create HTML email content
+        const emailTemplate = createEmailTemplate(fileName, qrCodeBase64);
+        
+        const emailData = {
+            from: 'Amptron Instruments <noreply@resend.dev>',
+            to: [recipientEmail],
+            subject: `ไฟล์ ${fileName} พร้อมใช้งาน - Amptron Instruments`,
+            html: emailTemplate.html
         };
         
-        console.log('✅ Email notification simulated successfully');
-        console.log('💡 To send real emails, integrate with Resend API or SendGrid');
+        console.log('🚀 Sending real email via Resend API...');
+        console.log('Email data:', {
+            to: recipientEmail,
+            subject: emailData.subject,
+            from: emailData.from
+        });
+        
+        // Send request to Resend API
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData)
+        });
+        
+        const responseData = await response.json();
+        console.log('Resend response status:', response.status);
+        console.log('Resend response data:', responseData);
+        
+        if (!response.ok) {
+            throw new Error(`Resend API error: ${response.status} - ${JSON.stringify(responseData)}`);
+        }
+        
+        const result = {
+            messageId: responseData.id || `resend-${Date.now()}@resend.dev`,
+            status: 'sent',
+            service: 'Resend',
+            to: recipientEmail,
+            fileName: fileName,
+            response: responseData
+        };
+        
+        console.log('✅ Real email sent successfully via Resend!');
+        console.log('Message ID:', result.messageId);
         
         return result;
         
     } catch (error) {
-        console.error('Error in email simulation:', error);
+        console.error('❌ Error sending email:', error);
         throw error;
     }
 }
