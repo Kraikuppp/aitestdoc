@@ -715,6 +715,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Debug route
+app.get('/test', (req, res) => {
+    res.send('Server is working! Routes are active.');
+});
+
 // OAuth callback route
 app.get('/oauth/callback', async (req, res) => {
     const code = req.query.code;
