@@ -305,13 +305,24 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const CREDENTIALS_PATH = 'client_secret_537558187339-g9ua637qvrh3e2idbi35g58ll5oioct3.apps.googleusercontent.com.json';
 const TOKEN_PATH = 'token.json';
 
-// Load client secrets from a local file
+// Load client secrets from environment or local file
 async function loadCredentials() {
+    // Try to load from environment variables first (for Railway/production)
+    if (process.env.GOOGLE_CREDENTIALS) {
+        try {
+            return JSON.parse(process.env.GOOGLE_CREDENTIALS);
+        } catch (error) {
+            console.error('Error parsing GOOGLE_CREDENTIALS environment variable:', error);
+        }
+    }
+    
+    // Fallback to local file (for development)
     try {
         const content = await fs.readFile(CREDENTIALS_PATH);
         return JSON.parse(content);
     } catch (error) {
         console.error('Error loading client secret file:', error);
+        console.log('Please set GOOGLE_CREDENTIALS environment variable or ensure the credentials file exists');
         throw error;
     }
 }
