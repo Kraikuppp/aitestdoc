@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AITESTDOC - Internal File Management System</title>
+    <link rel="icon" type="image/png" href="WebMeter-logo.png">
+    <link rel="shortcut icon" type="image/png" href="WebMeter-logo.png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .drag-drop-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .drag-drop-area.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        .file-item {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <img src="WebMeter-logo.png" alt="AITESTDOC Logo" class="h-16 w-auto mr-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">AITESTDOC</h1>
+                    <p class="text-gray-600">ระบบจัดการไฟล์ภายในบริษัท</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-cloud-upload-alt mr-2 text-blue-500"></i>
+                    อัปโหลดไฟล์
+                </h2>
+                
+                <div class="drag-drop-area rounded-lg p-8 text-center mb-4" id="dropArea">
+                    <i class="fas fa-file-upload text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</p>
+                    <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.doc,.docx,.png,.jpeg,.jpg">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="selectFilesBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-file mr-2"></i>
+                        เลือกไฟล์
+                    </button>
+                    <button id="selectFolderBtn" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-folder-open mr-2"></i>
+                        เลือกโฟลเดอร์
+                    </button>
+                </div>
+                
+                <input type="file" id="folderInput" class="hidden" webkitdirectory directory multiple>
+
+                <!-- Selected Files -->
+                <div id="selectedFiles" class="mt-4 space-y-2"></div>
+
+                <!-- Upload Options -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-medium text-gray-700 mb-3">ตัวเลือกการอัปโหลด</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="uploadMode" value="individual" class="mr-2" checked>
+                            <span class="text-sm">อัปโหลดแยกไฟล์ (QR Code แยกไฟล์)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="uploadMode" value="combined" class="mr-2">
+                            <span class="text-sm">รวมไฟล์เป็น PDF เดียว (QR Code เดียว)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="uploadBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg mt-4 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-upload mr-2"></i>
+                    อัปโหลดไฟล์
+                </button>
+
+                <!-- Loading -->
+                <div class="loading mt-4 text-center">
+                    <div class="inline-flex items-center">
+                        <i class="fas fa-spinner fa-spin mr-2 text-blue-500"></i>
+                        <span class="text-gray-600">กำลังอัปโหลด...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-qrcode mr-2 text-green-500"></i>
+                    QR Code และลิงก์ไฟล์
+                </h2>
+                
+                <div id="results" class="space-y-4">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-info-circle text-3xl mb-2"></i>
+                        <p>อัปโหลดไฟล์เพื่อดู QR Code</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-envelope mr-2 text-orange-500"></i>
+                        ส่งอีเมล QR Code
+                    </h2>
+                    <button id="emailHistoryBtn" class="text-gray-500 hover:text-orange-500 transition-colors duration-200" title="ประวัติการส่งอีเมล">
+                        <i class="fas fa-history text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Email Form -->
+                <div id="emailForm" class="space-y-4">
+                    <div>
+                        <label for="recipientEmail" class="block text-sm font-medium text-gray-700 mb-2">
+                            อีเมลผู้รับ
+                        </label>
+                        <input type="email" id="recipientEmail" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="example@domain.com">
+                    </div>
+                    
+                    <button id="sendEmailBtn" 
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            style="display: block !important;"
+                            title="ส่งอีเมล">
+                        <i class="fas fa-paper-plane text-xl"></i>
+                    </button>
+                    
+                    <!-- Email Loading -->
+                    <div id="emailLoading" class="hidden text-center">
+                        <div class="inline-flex items-center">
+                            <i class="fas fa-spinner fa-spin mr-2 text-orange-500"></i>
+                            <span class="text-gray-600">กำลังส่งอีเมล...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Status -->
+                    <div id="emailStatus" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Uploads -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-history mr-2 text-purple-500"></i>
+                ไฟล์ล่าสุด
+            </h2>
+            <div id="recentUploads" class="space-y-2">
+                <p class="text-gray-500 text-center py-4">ยังไม่มีไฟล์ที่อัปโหลด</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email History Modal -->
+    <div id="emailHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-history mr-2 text-orange-500"></i>
+                        ประวัติการส่งอีเมล
+                    </h3>
+                    <button id="closeEmailHistoryModal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <button id="selectAllEmails" class="text-sm text-blue-600 hover:text-blue-800">
+                                เลือกทั้งหมด
+                            </button>
+                            <span class="text-gray-300">|</span>
+                            <button id="deselectAllEmails" class="text-sm text-blue-600 hover:text-blue-800">
+                                ยกเลิกทั้งหมด
+                            </button>
+                        </div>
+                        <button id="resendSelectedEmails" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            ส่งอีกครั้ง
+                        </button>
+                    </div>
+                    
+                    <div id="emailHistoryList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-500 text-center py-8">ยังไม่มีประวัติการส่งอีเมล</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
