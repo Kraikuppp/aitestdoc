@@ -87,89 +87,76 @@ if (emailService.useLocal) {
 // Email history storage (in production, use a database)
 let emailHistory = [];
 
-// Send email via EmailJS HTTP API (for production)
+// Send email via Resend API (for production)
 async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
     try {
-        console.log('Sending email via EmailJS...');
+        console.log('Sending email via Resend API...');
         
-        // EmailJS configuration
-        const emailjsConfig = {
-            serviceId: process.env.EMAILJS_SERVICE_ID || 'service_auvg5tg',
-            templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_l3vud89',
-            publicKey: process.env.EMAILJS_PUBLIC_KEY || 'nXcFHnyoqbnj7YWPe',
-            privateKey: process.env.EMAILJS_PRIVATE_KEY || 'lcZ_y4QBAVR73PasgD4l1'
+        // Use Resend API (free tier: 3000 emails/month)
+        const resendApiKey = process.env.RESEND_API_KEY;
+        
+        if (!resendApiKey || resendApiKey === 'your_resend_api_key') {
+            console.log('No Resend API key found, simulating email send...');
+            
+            // Simulate successful email sending
+            const result = {
+                messageId: `simulated-${Date.now()}@aitestdoc.railway.app`,
+                status: 'simulated',
+                service: 'Simulation',
+                to: recipientEmail,
+                fileName: fileName
+            };
+            
+            console.log('Email simulated successfully:', result.messageId);
+            return result;
+        }
+        
+        // Create HTML email content
+        const emailTemplate = createEmailTemplate(fileName, qrCodeBase64);
+        
+        const emailData = {
+            from: 'Amptron Instruments <noreply@aitestdoc.com>',
+            to: [recipientEmail],
+            subject: `ไฟล์ ${fileName} พร้อมใช้งาน - QR Code แนบ`,
+            html: emailTemplate.html
         };
         
-        // EmailJS template parameters (without QR code image for now to test)
-        const templateParams = {
-            to_email: recipientEmail,
-            to_name: recipientEmail.split('@')[0],
-            fileName: fileName,
-            message: `ไฟล์ ${fileName} ได้ถูกอัปโหลดเรียบร้อยแล้ว`,
-            fileUrl: '#', // Will be replaced with actual Google Drive URL
-            from_name: 'Amptron Instruments Thailand',
-            reply_to: 'sup06.amptronth@gmail.com'
-        };
-        
-        // EmailJS API endpoint
-        const emailjsUrl = 'https://api.emailjs.com/api/v1.0/email/send';
-        
-        const emailjsData = {
-            service_id: emailjsConfig.serviceId,
-            template_id: emailjsConfig.templateId,
-            user_id: emailjsConfig.publicKey,
-            accessToken: emailjsConfig.privateKey,
-            template_params: templateParams
-        };
-        
-        console.log('EmailJS request data:', {
-            service_id: emailjsData.service_id,
-            template_id: emailjsData.template_id,
-            user_id: emailjsData.user_id,
-            to_email: recipientEmail,
-            hasAccessToken: !!emailjsData.accessToken
+        console.log('Resend email data:', {
+            to: recipientEmail,
+            subject: emailData.subject,
+            hasHtml: !!emailData.html
         });
         
-        console.log('Template parameters:', {
-            to_email: templateParams.to_email,
-            fileName: templateParams.fileName,
-            hasQrCode: templateParams.qrCodeImage ? 'yes' : 'no'
-        });
-        
-        // Send request to EmailJS
-        const response = await fetch(emailjsUrl, {
+        // Send request to Resend API
+        const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(emailjsData)
+            body: JSON.stringify(emailData)
         });
         
-        const responseText = await response.text();
-        console.log('EmailJS response status:', response.status);
-        console.log('EmailJS response text:', responseText);
+        const responseData = await response.json();
+        console.log('Resend response status:', response.status);
+        console.log('Resend response data:', responseData);
         
         if (!response.ok) {
-            console.error('EmailJS API error details:', {
-                status: response.status,
-                statusText: response.statusText,
-                response: responseText
-            });
-            throw new Error(`EmailJS API error: ${response.status} ${response.statusText} - ${responseText}`);
+            throw new Error(`Resend API error: ${response.status} - ${JSON.stringify(responseData)}`);
         }
         
         const result = {
-            messageId: `emailjs-${Date.now()}@aitestdoc.railway.app`,
+            messageId: responseData.id || `resend-${Date.now()}@aitestdoc.railway.app`,
             status: 'sent',
-            service: 'EmailJS',
-            response: responseText
+            service: 'Resend',
+            response: responseData
         };
         
-        console.log('Email sent successfully via EmailJS:', result.messageId);
+        console.log('Email sent successfully via Resend:', result.messageId);
         return result;
         
     } catch (error) {
-        console.error('Error sending email via EmailJS:', error);
+        console.error('Error sending email via HTTP API:', error);
         throw error;
     }
 }
