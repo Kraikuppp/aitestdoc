@@ -112,7 +112,8 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
             logoBase64: logoBase64,
             qrCodeBase64: qrCodeBase64,
             fileUrl: '#', // Will be replaced with actual Google Drive URL
-            from_name: 'Amptron Instruments Thailand Co.,Ltd.',
+            from_name: 'AMPTRON',
+            company_full_name: 'Amptron Instruments Thailand Co.,Ltd.',
             reply_to: 'sales@amptron.th.com'
         };
         
