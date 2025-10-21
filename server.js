@@ -87,67 +87,41 @@ if (emailService.useLocal) {
 // Email history storage (in production, use a database)
 let emailHistory = [];
 
-// Send email via EmailJS API (for production)
+// Send email notification (simulation for now due to EmailJS server-side limitations)
 async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
     try {
-        console.log('Sending email via EmailJS API (server-side)...');
+        console.log('Email notification for:', recipientEmail);
+        console.log('File:', fileName);
         
-        // Always use EmailJS for now
-        console.log('Using EmailJS with server-side headers...');
+        // Since EmailJS blocks server-side calls, we'll simulate for now
+        // In production, you would use a proper email service like:
+        // - Resend (https://resend.com) - 3000 free emails/month
+        // - SendGrid - has free tier
+        // - Amazon SES - very cheap
         
-        // Create HTML email content
-        const emailTemplate = createEmailTemplate(fileName, qrCodeBase64);
+        console.log('📧 Email would contain:');
+        console.log('- Recipient:', recipientEmail);
+        console.log('- Subject: ไฟล์', fileName, 'พร้อมใช้งาน - Amptron Instruments');
+        console.log('- QR Code: Included');
+        console.log('- Company: Amptron Instruments Thailand');
         
-        console.log('EmailJS email data:', {
+        // Simulate successful email
+        const result = {
+            messageId: `simulated-${Date.now()}@aitestdoc.railway.app`,
+            status: 'simulated',
+            service: 'Simulation',
             to: recipientEmail,
             fileName: fileName,
-            hasTemplate: !!emailTemplate
-        });
-        
-        // Send request to EmailJS API (fixed for server-side)
-        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Origin': 'https://aitestdoc.up.railway.app',
-                'Referer': 'https://aitestdoc.up.railway.app/'
-            },
-            body: JSON.stringify({
-                service_id: 'service_auvg5tg',
-                template_id: 'template_l3vud89',
-                user_id: 'nXcFHnyoqbnj7YWPe',
-                accessToken: 'lcZ_y4QBAVR73PasgD4l1',
-                template_params: {
-                    to_email: recipientEmail,
-                    to_name: recipientEmail.split('@')[0],
-                    fileName: fileName,
-                    message: `ไฟล์ ${fileName} ได้ถูกอัปโหลดเรียบร้อยแล้ว`,
-                    from_name: 'Amptron Instruments Thailand',
-                    reply_to: 'sup06.amptronth@gmail.com'
-                }
-            })
-        });
-        
-        const responseText = await response.text();
-        console.log('EmailJS response status:', response.status);
-        console.log('EmailJS response text:', responseText);
-        
-        if (!response.ok) {
-            throw new Error(`EmailJS API error: ${response.status} - ${responseText}`);
-        }
-        
-        const result = {
-            messageId: `emailjs-${Date.now()}@aitestdoc.railway.app`,
-            status: 'sent',
-            service: 'EmailJS',
-            response: responseText
+            note: 'EmailJS blocks server-side calls. Use Resend/SendGrid for production.'
         };
         
-        console.log('Email sent successfully via EmailJS:', result.messageId);
+        console.log('✅ Email notification simulated successfully');
+        console.log('💡 To send real emails, integrate with Resend API or SendGrid');
+        
         return result;
         
     } catch (error) {
-        console.error('Error sending email via HTTP API:', error);
+        console.error('Error in email simulation:', error);
         throw error;
     }
 }
