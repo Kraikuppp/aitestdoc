@@ -41,8 +41,8 @@ function extractFolderName(filePath) {
 const emailConfig = {
     service: 'gmail',
     auth: {
-        user: 'sup06.amptronth@gmail.com',
-        pass: 'wyxr olrk xypm hdst' // Gmail App Password
+        user: process.env.EMAIL_USER || 'sup06.amptronth@gmail.com',
+        pass: process.env.EMAIL_PASS || 'wyxr olrk xypm hdst' // Gmail App Password
     }
 };
 
@@ -243,7 +243,11 @@ async function sendEmailWithQR(recipientEmail, fileName, qrCodeDataUrl) {
             ]
         };
         
+        console.log('Attempting to send email to:', recipientEmail);
+        console.log('Email config:', { user: emailConfig.auth.user, service: emailConfig.service });
+        
         const result = await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully:', result.messageId);
         
         // Save to email history
         const emailRecord = {
@@ -267,6 +271,12 @@ async function sendEmailWithQR(recipientEmail, fileName, qrCodeDataUrl) {
         
     } catch (error) {
         console.error('Error sending email:', error);
+        console.error('Error details:', {
+            code: error.code,
+            command: error.command,
+            response: error.response,
+            responseCode: error.responseCode
+        });
         
         // Save failed attempt to history
         const emailRecord = {
