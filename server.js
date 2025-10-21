@@ -322,8 +322,15 @@ async function createOAuth2Client() {
     // Support both 'web' and 'installed' credential types
     const credentialData = credentials.web || credentials.installed;
     const { client_secret, client_id, redirect_uris } = credentialData;
-    // Use the redirect URI from the credentials file
-    const callbackUrl = redirect_uris[0];
+    
+    // Use environment-specific callback URL
+    const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : process.env.NODE_ENV === 'production' 
+            ? 'https://aitestdoc.up.railway.app' // อัปเดตเป็น URL ใหม่
+            : 'http://localhost:3000';
+    
+    const callbackUrl = `${baseUrl}/oauth/callback`;
     return new google.auth.OAuth2(client_id, client_secret, callbackUrl);
 }
 
