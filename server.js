@@ -37,32 +37,47 @@ function extractFolderName(filePath) {
     return null;
 }
 
-// Email configuration
-const emailConfig = {
+
+// Create multiple email transporters as fallback
+const gmailConfig = {
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER || 'sup06.amptronth@gmail.com',
-        pass: process.env.EMAIL_PASS || 'wyxr olrk xypm hdst' // Gmail App Password
+        pass: process.env.EMAIL_PASS || 'wyxr olrk xypm hdst'
     },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 60000, // 60 seconds
-    greetingTimeout: 30000, // 30 seconds
-    socketTimeout: 60000 // 60 seconds
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 30000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000
 };
 
-// Create email transporter
-const transporter = nodemailer.createTransport(emailConfig);
+const outlookConfig = {
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_USER || 'sup06.amptronth@gmail.com',
+        pass: process.env.EMAIL_PASS || 'wyxr olrk xypm hdst'
+    },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 30000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000
+};
+
+// Try Gmail first, then Outlook as fallback
+let transporter = nodemailer.createTransport(gmailConfig);
+let backupTransporter = nodemailer.createTransport(outlookConfig);
 
 // Test SMTP connection on startup
 transporter.verify((error, success) => {
     if (error) {
-        console.error('SMTP connection error:', error);
+        console.error('Gmail SMTP connection error:', error);
+        console.log('Will try backup transporter if needed');
     } else {
-        console.log('SMTP server is ready to take our messages');
+        console.log('Gmail SMTP server is ready to take our messages');
     }
 });
 
@@ -241,7 +256,7 @@ async function sendEmailWithQR(recipientEmail, fileName, qrCodeDataUrl) {
         const mailOptions = {
             from: {
                 name: 'Amptron Instruments Thailand',
-                address: emailConfig.auth.user
+                address: gmailConfig.auth.user
             },
             to: recipientEmail,
             subject: emailTemplate.subject,
@@ -261,24 +276,36 @@ async function sendEmailWithQR(recipientEmail, fileName, qrCodeDataUrl) {
         };
         
         console.log('Attempting to send email to:', recipientEmail);
-        console.log('Email config:', { user: emailConfig.auth.user, host: emailConfig.host, port: emailConfig.port });
+        console.log('Email config:', { user: gmailConfig.auth.user, host: gmailConfig.host, port: gmailConfig.port });
         
-        // Try to send email with retry mechanism
+        // Try to send email with retry mechanism and fallback transporter
         let result;
         let attempts = 0;
-        const maxAttempts = 3;
+        const maxAttempts = 2; // Reduce attempts per transporter
+        let currentTransporter = transporter;
+        let transporterName = 'Gmail';
         
+        // Try Gmail first
         while (attempts < maxAttempts) {
             try {
                 attempts++;
-                console.log(`Email send attempt ${attempts}/${maxAttempts}`);
-                result = await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully:', result.messageId);
+                console.log(`${transporterName} send attempt ${attempts}/${maxAttempts}`);
+                result = await currentTransporter.sendMail(mailOptions);
+                console.log(`Email sent successfully via ${transporterName}:`, result.messageId);
                 break;
             } catch (sendError) {
-                console.error(`Email send attempt ${attempts} failed:`, sendError.message);
+                console.error(`${transporterName} send attempt ${attempts} failed:`, sendError.message);
                 if (attempts === maxAttempts) {
-                    throw sendError;
+                    // If Gmail failed, try backup transporter
+                    if (currentTransporter === transporter) {
+                        console.log('Switching to backup transporter (Outlook)...');
+                        currentTransporter = backupTransporter;
+                        transporterName = 'Outlook';
+                        attempts = 0; // Reset attempts for backup
+                        continue;
+                    } else {
+                        throw sendError;
+                    }
                 }
                 // Wait 2 seconds before retry
                 await new Promise(resolve => setTimeout(resolve, 2000));
