@@ -100,15 +100,12 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
             privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
         };
         
-        // Convert QR code to data URL
-        const qrCodeDataURL = `data:image/png;base64,${qrCodeBase64}`;
-        
-        // EmailJS template parameters
+        // EmailJS template parameters (without QR code image for now to test)
         const templateParams = {
             to_email: recipientEmail,
             to_name: recipientEmail.split('@')[0],
             fileName: fileName,
-            qrCodeImage: qrCodeDataURL,
+            message: `ไฟล์ ${fileName} ได้ถูกอัปโหลดเรียบร้อยแล้ว`,
             fileUrl: '#', // Will be replaced with actual Google Drive URL
             from_name: 'Amptron Instruments Thailand',
             reply_to: 'sup06.amptronth@gmail.com'
@@ -128,7 +125,15 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
         console.log('EmailJS request data:', {
             service_id: emailjsData.service_id,
             template_id: emailjsData.template_id,
-            to_email: recipientEmail
+            user_id: emailjsData.user_id,
+            to_email: recipientEmail,
+            hasAccessToken: !!emailjsData.accessToken
+        });
+        
+        console.log('Template parameters:', {
+            to_email: templateParams.to_email,
+            fileName: templateParams.fileName,
+            hasQrCode: templateParams.qrCodeImage ? 'yes' : 'no'
         });
         
         // Send request to EmailJS
@@ -140,12 +145,18 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
             body: JSON.stringify(emailjsData)
         });
         
-        if (!response.ok) {
-            throw new Error(`EmailJS API error: ${response.status} ${response.statusText}`);
-        }
-        
         const responseText = await response.text();
-        console.log('EmailJS response:', responseText);
+        console.log('EmailJS response status:', response.status);
+        console.log('EmailJS response text:', responseText);
+        
+        if (!response.ok) {
+            console.error('EmailJS API error details:', {
+                status: response.status,
+                statusText: response.statusText,
+                response: responseText
+            });
+            throw new Error(`EmailJS API error: ${response.status} ${response.statusText} - ${responseText}`);
+        }
         
         const result = {
             messageId: `emailjs-${Date.now()}@aitestdoc.railway.app`,
