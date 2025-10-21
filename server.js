@@ -60,8 +60,8 @@ const emailService = {
     
     // EmailJS for production (free HTTP API)
     emailjs: {
-        serviceId: process.env.EMAILJS_SERVICE_ID || 'service_gmail',
-        templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_aitestdoc',
+        serviceId: process.env.EMAILJS_SERVICE_ID || 'service_auvg5tg',
+        templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_l3vud89',
         publicKey: process.env.EMAILJS_PUBLIC_KEY || 'your_public_key',
         privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
     }
@@ -94,8 +94,8 @@ async function sendEmailViaHTTP(recipientEmail, fileName, qrCodeBase64) {
         
         // EmailJS configuration
         const emailjsConfig = {
-            serviceId: process.env.EMAILJS_SERVICE_ID || 'service_gmail',
-            templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_aitestdoc',
+            serviceId: process.env.EMAILJS_SERVICE_ID || 'service_auvg5tg',
+            templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_l3vud89',
             publicKey: process.env.EMAILJS_PUBLIC_KEY || 'your_public_key',
             privateKey: process.env.EMAILJS_PRIVATE_KEY || 'your_private_key'
         };
